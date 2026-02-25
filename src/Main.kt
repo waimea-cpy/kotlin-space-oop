@@ -21,10 +21,14 @@ class Planet(
     val moonCount: Int,
     val majorMoons: MutableList<Moon> = mutableListOf<Moon>()
 ) {
-//    val majorMoons = mutableListOf<Moon>()
+    var scanned = false
 
     fun addMoon(newMoon: Moon) {
         majorMoons.add(newMoon)
+    }
+
+    fun scan() {
+        scanned = true
     }
 
     fun info(): String {
@@ -48,6 +52,7 @@ class SolarSystem {
 
     init {
         // Set up the major moons
+
         val luna = Moon("Luna", 3475)
         val phobos = Moon("Phobos", 22)
         val deimos = Moon("Deimos", 13)
@@ -72,14 +77,6 @@ class SolarSystem {
         val proteus = Moon("Proteus", 340)
 
         // Set up the planets
-//        val mercury = Planet("Mercury", "rocky", 58000000, 4879, 0)
-//        val venus = Planet("Venus", "rocky", 108000000, 12104, 0)
-//        val earth = Planet("Earth", "rocky", 150000000, 12756, 1)
-//        val mars = Planet("Mars", "rocky", 228000000, 6792, 2)
-//        val jupiter = Planet("Jupiter", "gas giant", 778000000, 142984, 95)
-//        val saturn = Planet("Saturn", "gas giant", 1430000000, 120536, 274)
-//        val uranus = Planet("Uranus", "ice giant", 2870000000, 51118, 28)
-//        val neptune = Planet("Neptune", "ice giant", 4500000000, 49528, 16)
 
         val mercury = Planet(
             "Mercury",
@@ -153,30 +150,6 @@ class SolarSystem {
         planets.add(saturn)
         planets.add(uranus)
         planets.add(neptune)
-
-        // Assign moons to planets
-//        earth.addMoon(luna)
-//        mars.addMoon(phobos)
-//        mars.addMoon(deimos)
-//        jupiter.addMoon(ganymede)
-//        jupiter.addMoon(callisto)
-//        jupiter.addMoon(io)
-//        jupiter.addMoon(europa)
-//        saturn.addMoon(titan)
-//        saturn.addMoon(enceladus)
-//        saturn.addMoon(rhea)
-//        saturn.addMoon(dione)
-//        saturn.addMoon(tethys)
-//        saturn.addMoon(mimas)
-//        saturn.addMoon(iapetus)
-//        uranus.addMoon(titania)
-//        uranus.addMoon(oberon)
-//        uranus.addMoon(umbriel)
-//        uranus.addMoon(ariel)
-//        uranus.addMoon(miranda)
-//        neptune.addMoon(triton)
-//        neptune.addMoon(nereid)
-//        neptune.addMoon(proteus)
     }
 
     fun info(): String {
@@ -187,26 +160,92 @@ class SolarSystem {
         }
         return infoText
     }
+
+    fun map(location: Planet? = null): String {
+        var mapText = ""
+
+        if (location != null) {
+            mapText += "       "
+            for (planet in planets) mapText += if (planet == location) "You Are Here" else "           "
+            mapText += "\n"
+
+            mapText += "            "
+            for (planet in planets) mapText += if (planet == location) "↓↓         " else "           "
+            mapText += "\n"
+        }
+
+        mapText += " ⬤"
+        for (planet in planets) mapText += " ┄┄┄┄┄┄┄┄ ○"
+        mapText += "\n"
+
+        mapText += starName.padEnd(10)
+        for (planet in planets) mapText += planet.name.padEnd(11)
+        mapText += "\n"
+
+        for (i in 0..10) {
+            var mapMoonText = "           "
+            for (planet in planets) {
+                mapMoonText += if (planet.scanned && planet.majorMoons.size > i)
+                    "•" + planet.majorMoons[i].name.padEnd(10)
+                else
+                    "           "
+            }
+            if (mapMoonText.isNotBlank()) mapText += "$mapMoonText\n"
+        }
+
+        return mapText
+    }
 }
 
 
-class Mission(val solarSystem: SolarSystem) {
-    var currentPlanet = solarSystem.planets[2]
+class Mission(
+    val solarSystem: SolarSystem,
+    var currentPlanet: Planet?
+) {
     val log = mutableListOf<String>()
     var distance: Long = 0
+    var fuel = 10000
+    val KM_PER_KG = 1000000
 
     init {
-        log.add("Mission begins...")
+        log.add("Mission begins at ${currentPlanet!!.name}...")
     }
 
     fun status() {
-        println()
-        println("╔════════════════════════════════════════╗")
-        println("║ Mission Status :: ACTIVE               ║")
-        println("╠════════════════════════════════════════╣")
-        println("║ Current location: ${currentPlanet.name.padEnd(20)} ║")
-        println("║ Distance (km):    ${distance.commas().padEnd(20)} ║")
-        println("╚════════════════════════════════════════╝")
+        println("╔═════════════════════════════════════════╗")
+        println("║    Mission Status: ACTIVE               ║")
+        println("║     Distance (km): ${distance.commas().padEnd(20)} ║")
+        println("║    Fuel left (kg): ${fuel.commas().padEnd(20)} ║")
+        println("╠═════════════════════════════════════════╣")
+
+        if (currentPlanet != null) {
+            println("║   Orbiting planet: ${currentPlanet!!.name.padEnd(20)} ║")
+            println("║ Orbit radius (km): ${currentPlanet!!.distanceToSun.commas().padEnd(20)} ║")
+
+            if (currentPlanet!!.scanned) {
+                println("║       Planet type: ${currentPlanet!!.type.padEnd(20)} ║")
+                println("║     Diameter (km): ${currentPlanet!!.diameter.commas().padEnd(20)} ║")
+                println("║        Moon count: ${currentPlanet!!.moonCount.toString().padEnd(20)} ║")
+
+                if (currentPlanet!!.majorMoons.isNotEmpty()) {
+                    print("║       Major moons: ")
+                    for (moon in currentPlanet!!.majorMoons) {
+                        println("${moon.name.padEnd(20)} ║")
+                        if (moon != currentPlanet!!.majorMoons.last()) {
+                            print("║                    ")
+                        }
+                    }
+                }
+            }
+            else {
+                println("║     Planet status: UNSCANNED            ║")
+            }
+        }
+        else {
+            println("║          ADRIFT IN SPACE :-(            ║")
+        }
+
+        println("╚═════════════════════════════════════════╝")
         println()
     }
 
@@ -230,55 +269,94 @@ class Mission(val solarSystem: SolarSystem) {
     fun getAction(): Char? {
         println("OPTIONS:")
         println("• View mission [L]og")
+        println("• View system [M]ap")
         println("• [T]ravel to a planet")
+        println("• [S]can local planet")
         println("• [Q]uit mission")
         println()
         print("> ")
 
         val action = readlnOrNull()?.firstOrNull()?.lowercaseChar()
+        println()
 
         return action
     }
 
     fun getDestination(): Planet? {
-        println("Pick a planet to travel to:")
-        solarSystem.planets.forEachIndexed { i, planet ->
-            println("${i + 1}. ${planet.name}")
-        }
-        print("Destination: ")
+        if (fuel > 0) {
+            println("Select a destination:")
+            solarSystem.planets.forEachIndexed { i, planet ->
+                print("• [${i + 1}] ${planet.name.padEnd(10)}")
 
-        val planetIndex = readlnOrNull()?.toIntOrNull()
-        if (planetIndex != null && planetIndex in 1..solarSystem.planets.size) {
-            val planet = solarSystem.planets[planetIndex - 1]
-            return planet
+                if (planet == currentPlanet) {
+                    print("CURRENT LOCATION  ")
+                }
+                else {
+                    val distAway = abs(planet.distanceToSun - currentPlanet!!.distanceToSun).commas() + "km"
+                    print(distAway.padEnd(18))
+                }
+
+                if (planet.scanned)
+                    println("${planet.moonCount} moons")
+                else
+                    println("???")
+            }
+            println()
+            print("> ")
+
+            val planetIndex = readlnOrNull()?.toIntOrNull()
+            if (planetIndex != null && planetIndex in 1..solarSystem.planets.size) {
+                val planet = solarSystem.planets[planetIndex - 1]
+                return planet
+            }
         }
 
         return null
     }
 
     fun travelTo(destination: Planet) {
-        val currentDistFromSun = currentPlanet.distanceToSun
-        val destinationDistFromSun = destination.distanceToSun
-        val tripDist = abs(destinationDistFromSun - currentDistFromSun)
-        distance += tripDist
+        if (currentPlanet != null && destination != currentPlanet && fuel > 0) {
+            logEntry("Leaving ${currentPlanet!!.name} for ${destination.name}...")
 
-        logEntry("Leaving ${currentPlanet.name} for ${destination.name}...")
+            val tripDist = abs(destination.distanceToSun - currentPlanet!!.distanceToSun)
+            val fuelUsed = (tripDist / KM_PER_KG).toInt()
 
-        currentPlanet = destination
+            if (fuelUsed > fuel) {
+                distance += fuel * KM_PER_KG
+                fuel = 0
+                currentPlanet = null
+                logEntry("Ran out of fuel!")
+                logEntry("ADRIFT IN SPACE  :-(")
+            }
+            else {
+                distance += tripDist
+                fuel -= fuelUsed
+                currentPlanet = destination
+                logEntry("Travelled ${tripDist.commas()}km")
+                logEntry("Arrived at ${currentPlanet!!.name}")
+            }
+        }
+    }
 
-        logEntry("Travelled ${tripDist.commas()}km")
-        logEntry("Arrived at ${currentPlanet.name}")
+    fun scanPlanet() {
+        if (currentPlanet != null) {
+            logEntry("Scanning planet...")
+            currentPlanet!!.scan()
+            logEntry(currentPlanet!!.info())
+        }
+    }
 
-        logEntry("Scanning...")
-        logEntry(currentPlanet.info())
-
+    fun showMap() {
+        println(solarSystem.map(currentPlanet))
     }
 }
 
 
 fun main() {
     val solarSystem = SolarSystem()
-    val mission = Mission(solarSystem)
+    println(solarSystem.map(solarSystem.planets[2]))
+
+    val mission = Mission(solarSystem, solarSystem.planets[2])
 
     while (true) {
         mission.status()
@@ -286,9 +364,14 @@ fun main() {
         val action = mission.getAction()
         when (action) {
             'l' -> mission.showLog()
+            'm' -> mission.showMap()
             't' -> {
                 val destination = mission.getDestination() ?: continue
                 mission.travelTo(destination)
+            }
+
+            's' -> {
+                mission.scanPlanet()
             }
 
             'q' -> break
